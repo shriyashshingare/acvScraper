@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer')
 const PUPPETEER_UI_FLAG = false
-const mongo = require('./DB')
+const mongo = require('../modules/DB')
 class Acv {
     constructor() {
         this.page;
@@ -25,7 +25,21 @@ class Acv {
             });
         });
     }
-
+    
+    async startScrapingInsideLink() {
+        try {
+            let launchBrowser = await this.launchBrowser()
+            console.log('launch', launchBrowser)
+            if (launchBrowser) {
+                let getLoggedIn = await this.getLoggedIn()
+                let auctionDetails = await this.getDetails()
+                console.log(auctionDetails)
+            }
+        } catch (err) {
+            console.log(err.toString())
+            return { sucess: false, message: 'Unable to process'}
+        }
+    }
 
     async startScraping() {
         const auctionsSelector = ''
@@ -44,7 +58,7 @@ class Acv {
                 countIndex = await this.getPostDetails(countIndex)
                 await this.autoScroll()
             }
-        } catch (err) {
+        }  catch (err) {
             return { sucess: false, message: 'Unable to process'}
         }
     }
@@ -62,7 +76,7 @@ class Acv {
                     let postLink = await auction.$eval('a', el => el.href)
                     let ifDataFound = await mongo.usaacv.collection('acvLink').findOne({ href: postLink})
                     if(!ifDataFound) {
-                        await mongo.usaacv.collection('acvLinks').insertOne({href : postLink})
+                        await mongo.usaacv.collection('acvLinks').insertOne({href : postLink, status : 0})
                         console.log('adding-', postLink)
                     } else {
                         console.log('already inserted', postLink)
@@ -80,8 +94,7 @@ class Acv {
             const browser = await puppeteer.launch({
                 headless: PUPPETEER_UI_FLAG,
             })
-            const context = await browser.createIncognitoBrowserContext()
-            this.page = await context.newPage()
+            this.page = await browser.newPage()
 
             await this.page.setViewport({ width: 1366, height: 760 })
             return true
@@ -102,6 +115,7 @@ class Acv {
             const pass = 'Password231$'
 
             await this.page.goto('https://app.acvauctions.com/login')
+            console.log('i am here 1')
             //getting logged in
             await this.page.waitForSelector(loginButtonSelector)
             await this.page.type(emailSelector, email)
@@ -112,6 +126,78 @@ class Acv {
         } catch (err) {
             return false
         }
+
+    }
+
+    async getRandomUrl() {
+        let url = await mongo.usaacv.collection('acvLinks').aggregate([{$match:{status:0}},{$sample:{size:1}}]).toArray()
+        let sourceUrl = url[0].href
+        await mongo.usaacv.collection('acvLinks').updateOne({href:sourceUrl}, {$set:{status:1}})
+        return sourceUrl
+    }
+
+    async getDetails() {
+        console.log('i am here 3')
+        const auctionSelector = {
+            carName: 'h1.vehicle-name.shimmer',
+            tableKeys: '.table-striped .left',
+            tableValues: '.table-striped .right',
+        }
+        //let sourceUrls = await this.getLinks()
+
+        let sourceUrl = await getRandomUrl()
+
+        this.page.goto(sourceUrl, {waitUntil:"networkidle2"})
+
+        await this.page.waitForSelector('.table-striped')
+        await this.page.waitForTimeout(5000)
+        console.log('i am here 4')
+        let tableKeys = await this.page.evaluate((tableKeysInside) => {
+            console.log(tableKeysInside)
+            let keys = []
+            let keysData = document.querySelectorAll(tableKeysInside)
+            for (let i = 0; i < keysData.length; i++) {
+                keys.push(keysData[i].innerText)
+            }
+            return keys
+        }, auctionSelector.tableKeys)
+
+        console.log('i am here 5')
+        let tableValues = await this.page.evaluate((tableValuesInside) => {
+            let values = []
+            let valuesData = document.querySelectorAll(tableValuesInside)
+            for (let i = 0; i < valuesData.length; i++) {
+                values.push(valuesData[i].innerText)
+            }
+            return values
+        }, auctionSelector.tableValues)
+
+        console.log(tableValues, 'right side values')
+
+        console.log('i am here 6')
+        let carName = await this.page.evaluate((carNameInside) => {
+            let name = document.querySelector(carNameInside).innerText
+            return name
+        }, auctionSelector.carName)
+        console.log('i am here 7')
+        let auctionDetails = []
+        auctionDetails['carName'] = carName
+        for (let i = 0; i < tableKeys.length && i < tableValues.length; i++) {
+            auctionDetails[tableKeys[i]] = tableValues[i]
+        }
+        console.log(auctionDetails)
+        return auctionDetails
+    }
+
+    async getLinks() {
+        try {
+            let links = await mongo.usaacv.collection('links').find({ status: 0 }).toArray()
+            return links
+        } catch (err) {
+
+        }
+    }
+    async getAuctionedIds() {
 
     }
 
