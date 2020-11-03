@@ -17,7 +17,6 @@ class Acv {
         } catch (err) {
 
         }
-
     }
 
     async launchBrowser() {

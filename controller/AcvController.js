@@ -3,7 +3,7 @@ module.exports.startScraping = async function (req, res) {
     try {
         let bodyInfo = req.body
         if (1) {
-            var response = await new Acv().getLoggedIn();
+            var response = await new Acv().startScraping();
             res.send(response)
         } else {
             res.send({ "success": true, "Error": error, "Payload": [] })
