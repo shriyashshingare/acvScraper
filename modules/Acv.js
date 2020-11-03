@@ -30,10 +30,14 @@ class Acv {
         try {
             let launchBrowser = await this.launchBrowser()
             console.log('launch', launchBrowser)
-            if (launchBrowser) {
-                let getLoggedIn = await this.getLoggedIn()
-                let auctionDetails = await this.getDetails()
-                console.log(auctionDetails)
+            let getLoggedIn = await this.getLoggedIn()
+            if (launchBrowser && getLoggedIn) {
+                while(1) {
+                    //await this.page.waitForTimeout(5000)
+                    let sourceUrl = await this.getRandomUrl()
+                    let auctionDetails = await this.getDetails(sourceUrl)
+                    //console.log(auctionDetails)
+                }
             }
         } catch (err) {
             console.log(err.toString())
@@ -93,6 +97,7 @@ class Acv {
         try {
             const browser = await puppeteer.launch({
                 headless: PUPPETEER_UI_FLAG,
+                executablePath: 'C:/Program Files/BraveSoftware/Brave-Browser/Application/Brave.exe'
             })
             this.page = await browser.newPage()
 
@@ -136,7 +141,7 @@ class Acv {
         return sourceUrl
     }
 
-    async getDetails() {
+    async getDetails(sourceUrl) {
         console.log('i am here 3')
         const auctionSelector = {
             carName: 'h1.vehicle-name.shimmer',
@@ -145,9 +150,9 @@ class Acv {
         }
         //let sourceUrls = await this.getLinks()
 
-        let sourceUrl = await getRandomUrl()
+        //console.log('scraping for-', sourceUrl)
 
-        this.page.goto(sourceUrl, {waitUntil:"networkidle2"})
+        this.page.goto(sourceUrl)
 
         await this.page.waitForSelector('.table-striped')
         await this.page.waitForTimeout(5000)
@@ -180,25 +185,38 @@ class Acv {
             return name
         }, auctionSelector.carName)
         console.log('i am here 7')
-        let auctionDetails = []
-        auctionDetails['carName'] = carName
+        let auctionDetails = {}
+        auctionDetails["carName"] = carName
         for (let i = 0; i < tableKeys.length && i < tableValues.length; i++) {
-            auctionDetails[tableKeys[i]] = tableValues[i]
+            let key = tableKeys[i]
+            key =  key.slice(0, -1);
+            auctionDetails[key] = tableValues[i]
         }
         console.log(auctionDetails)
+        auctionDetails.status = 2;
+        this.insertPropertyDetails(sourceUrl, auctionDetails)
+
         return auctionDetails
     }
 
-    async getLinks() {
-        try {
-            let links = await mongo.usaacv.collection('links').find({ status: 0 }).toArray()
-            return links
-        } catch (err) {
+    // async getLinks() {
+    //     try {
+    //         let links = await mongo.usaacv.collection('links').find({ status: 0 }).toArray()
+    //         return links
+    //     } catch (err) {
 
-        }
-    }
+    //     }
+    // }
     async getAuctionedIds() {
 
+    }
+
+    async insertPropertyDetails(sourceLink, propertyDetails) {
+        try {
+            await mongo.usaacv.collection("acvLinks").findOneAndUpdate({href:sourceLink, status:1}, {$set:propertyDetails})
+        } catch(e) {
+            console.log('Unable to insert',e)
+        }
     }
 
 }
