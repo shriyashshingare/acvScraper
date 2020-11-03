@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer')
 const PUPPETEER_UI_FLAG = false
 const json2xls = require('json2xls');
 const mongo = require('../modules/DB')
+const fs = require('fs')
 class File {
     constructor() {
         this.acvLinks = 'acvLinks'

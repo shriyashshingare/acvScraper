@@ -1,9 +1,9 @@
-const Acv = require('../modules/File')
+const File = require('../modules/File')
 module.exports.generateFile = async function (req, res) {
     try {
         let bodyInfo = req.body
         if (1) {
-            var response = await new Acv().generateFile();
+            var response = await new File().generateFile();
             res.send(response)
         } else {
             res.send({ "success": true, "Error": error, "Payload": [] })
