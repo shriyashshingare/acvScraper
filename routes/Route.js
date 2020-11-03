@@ -1,9 +1,7 @@
 const express = require('express');
 const api = express.Router();
-
-
-
- //api.use('/api/fileUpload', manageFiles.fileManager);
+const acvController = require('../controller/AcvController') 
+api.use('/api/startScraping', acvController.startScraping);
 
 
 module.exports = api;
