@@ -97,13 +97,15 @@ class Acv {
         try {
             const browser = await puppeteer.launch({
                 headless: PUPPETEER_UI_FLAG,
-                executablePath: 'C:/Program Files/BraveSoftware/Brave-Browser/Application/Brave.exe'
+                //executablePath: 'C:/Program Files/BraveSoftware/Brave-Browser/Application/Brave.exe'
+                executablePath:'/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'
             })
             this.page = await browser.newPage()
 
             await this.page.setViewport({ width: 1366, height: 760 })
             return true
         } catch (err) {
+            console.log(err.toString())
             return false
         }
 
