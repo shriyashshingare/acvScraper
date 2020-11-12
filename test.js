@@ -8,4 +8,3 @@ const main = async () => {
 main().then(console.log(''))
 // document.querySelector("#auction-detail > div.margin-bottom.container > div:nth-child(3) > div > div")  
 // table table-striped
-

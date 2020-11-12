@@ -1,3 +1,4 @@
+const { timingSafeEqual } = require('crypto');
 const puppeteer = require('puppeteer')
 const PUPPETEER_UI_FLAG = false
 const mongo = require('../modules/DB')
@@ -15,9 +16,14 @@ class Mmr {
             let getLoggedIn = await this.getLoggedIn()
             if (launchBrowser && getLoggedIn) {
                 console.log('finished logging in')
-                while (1) {
+                let flag = 1
+                while (flag) {
                     let auctionDetails = await this.getRandomVin()
-                    await this.getDetails(auctionDetails)
+                    if(auctionDetails) {
+                        await this.getDetails(auctionDetails)
+                    } else {
+                        flag = 0
+                    }
                 }
 
             }
@@ -28,12 +34,12 @@ class Mmr {
 
     async launchBrowser() {
         try {
-            const browser = await puppeteer.launch({
+            this.browser = await puppeteer.launch({
                 headless: PUPPETEER_UI_FLAG,
-                //executablePath: 'C:/Program Files/BraveSoftware/Brave-Browser/Application/Brave.exe'
-                executablePath: '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'
+                executablePath: 'C:/Program Files/BraveSoftware/Brave-Browser/Application/Brave.exe'
+                //executablePath: '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'
             })
-            this.page = await browser.newPage()
+            this.page = await this.browser.newPage()
 
             await this.page.setViewport({ width: 1366, height: 760 })
             return true
@@ -86,7 +92,7 @@ class Mmr {
             await this.page.type(mmrSelector.vinNumber, auctionDetails.vinNumber)
             await this.page.click(mmrSelector.click)
 
-            await this.page.waitForTimeout(6000)
+            await this.page.waitForTimeout(4000)
 
             let productType = await this.page.evaluate((table) => {
                 let element = document.querySelector(table)
@@ -97,13 +103,13 @@ class Mmr {
                 }
             }, mmrSelector.table)
 
-            await this.page.waitForTimeout(4000)
+            await this.page.waitForTimeout(3000)
 
 
             await this.page.type(mmrSelector.odoMeter, auctionDetails.odoMeter)
             await this.page.click(mmrSelector.odoMeterClick)
 
-            await this.page.waitForTimeout(4000)
+            await this.page.waitForTimeout(3000)
 
             let adjustedMmrPrice = await this.page.evaluate((adjustedMmr) => {
                 let adjustedPrice = document.querySelector(adjustedMmr).innerText
@@ -129,17 +135,25 @@ class Mmr {
     async getRandomVin() {
         try {
             let vin = await mongo.usaacv.collection('acvLinks').aggregate([{ $match: { status: { $in: [2, 3] } } }, { $sample: { size: 1 } }]).toArray()
-            let auctionDetails = {
-                vinNumber: vin[0].vin,
-                odoMeter: vin[0].odometer
+            if(vin.length > 0 ) {
+                let auctionDetails = {
+                    vinNumber: vin[0].vin,
+                    odoMeter: vin[0].odometer
+                }
+                await mongo.usaacv.collection('acvLinks').updateOne({ vin: auctionDetails.vinNumber }, { $set: { status: 3 } })
+                return auctionDetails
+            } else {
+                console.log('Done with the script, output in status 3')
+                await this.page.close();
+                this.page = null;
+                await this.browser.close();
+                this.browser = null;
+                return false
             }
-            await mongo.usaacv.collection('acvLinks').updateOne({ vin: auctionDetails.vinNumber }, { $set: { status: 3 } })
-            return auctionDetails
         } catch (err) {
             console.log(err.toString())
             return false
         }
-
     }
 
 

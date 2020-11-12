@@ -33,11 +33,16 @@ class Acv {
             console.log('launch', launchBrowser)
             let getLoggedIn = await this.getLoggedIn()
             if (launchBrowser && getLoggedIn) {
-                while(1) {
+                let flag = 1
+                while (flag) {
                     //await this.page.waitForTimeout(5000)
                     let sourceUrl = await this.getRandomUrl()
-                    let auctionDetails = await this.getDetails(sourceUrl)
-                    //console.log(auctionDetails)
+                    if(sourceUrl) {
+                        let auctionDetails = await this.getDetails(sourceUrl)
+                        //console.log(auctionDetails)
+                    } else {
+                        flag = 0
+                    }
                 }
             }
         } catch (err) {
@@ -96,12 +101,12 @@ class Acv {
 
     async launchBrowser() {
         try {
-            const browser = await puppeteer.launch({
+            this.browser = await puppeteer.launch({
                 headless: PUPPETEER_UI_FLAG,
-                //executablePath: 'C:/Program Files/BraveSoftware/Brave-Browser/Application/Brave.exe'
-                executablePath:'/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'
+                executablePath: 'C:/Program Files/BraveSoftware/Brave-Browser/Application/Brave.exe'
+                //executablePath:'/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'
             })
-            this.page = await browser.newPage()
+            this.page = await this.browser.newPage()
 
             await this.page.setViewport({ width: 1366, height: 760 })
             return true
@@ -123,7 +128,6 @@ class Acv {
             const pass = 'Password231$'
 
             await this.page.goto('https://app.acvauctions.com/login')
-            console.log('i am here 1')
             //getting logged in
             await this.page.waitForSelector(loginButtonSelector)
             await this.page.type(emailSelector, email)
@@ -139,13 +143,21 @@ class Acv {
 
     async getRandomUrl() {
         let url = await mongo.usaacv.collection('acvLinks').aggregate([{$match:{status:0}},{$sample:{size:1}}]).toArray()
-        let sourceUrl = url[0].href
-        await mongo.usaacv.collection('acvLinks').updateOne({href:sourceUrl}, {$set:{status:1}})
-        return sourceUrl
+        if(url.length > 0) {
+            let sourceUrl = url[0].href
+            await mongo.usaacv.collection('acvLinks').updateOne({href:sourceUrl}, {$set:{status:1}})
+            return sourceUrl
+        } else {
+            console.log('Done with stage 2')
+            await this.page.close();
+            this.page = null
+            await this.browser.close();
+            this.browser = null
+            return false
+        }
     }
 
     async getDetails(sourceUrl) {
-        console.log('i am here 3')
         const auctionSelector = {
             carName: 'h1.vehicle-name.shimmer',
             tableKeys: '.table-striped .left',
@@ -161,7 +173,6 @@ class Acv {
 
         await this.page.waitForSelector('.table-striped')
         await this.page.waitForTimeout(5000)
-        console.log('i am here 4')
         let tableKeys = await this.page.evaluate((tableKeysInside) => {
             console.log(tableKeysInside)
             let keys = []
@@ -181,7 +192,6 @@ class Acv {
             return keys
         }, auctionSelector.auctionType)
 
-        console.log('i am here 5')
         let tableValues = await this.page.evaluate((tableValuesInside) => {
             let values = []
             let valuesData = document.querySelectorAll(tableValuesInside)
@@ -191,7 +201,6 @@ class Acv {
             return values
         }, auctionSelector.tableValues)
 
-        console.log('i am here 6')
         let carName = await this.page.evaluate((carNameInside) => {
             let name = document.querySelector(carNameInside).innerText
             return name
@@ -202,7 +211,6 @@ class Acv {
             return data
         }, auctionSelector.price)
 
-        console.log('i am here 7')
         let auctionDetails = {}
         auctionDetails["carName"] = carName
         auctionDetails['auctionTypes'] = auctionTypes
