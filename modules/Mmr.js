@@ -15,7 +15,11 @@ class Mmr {
             let getLoggedIn = await this.getLoggedIn()
             if (launchBrowser && getLoggedIn) {
                 console.log('finished logging in')
-                await this.getDetails()
+                while (1) {
+                    let auctionDetails = await this.getRandomVin()
+                    await this.getDetails(auctionDetails)
+                }
+
             }
         } catch (err) {
             return { sucess: false, message: 'Unable to process' }
@@ -65,49 +69,71 @@ class Mmr {
 
     }
 
-    async getDetails() {
-        console.log('i am here 3')
-        const mmrSelector = {
-            vinNumber: '#vinText',
-            odoMeter: '#Odometer',
-            adjustedMmr: '.show--inline-block[data-reactid="395"]',
-            click: '.btn-primary',
-            odoMeterClick:'[data-reactid="309"]'
-        }
-        let auctionDetails = await this.getRandomVin()
+    async getDetails(auctionDetails) {
+        try {
+            console.log('i am here 3')
+            const mmrSelector = {
+                vinNumber: '#vinText',
+                odoMeter: '#Odometer',
+                adjustedMmr: '.show--inline-block[data-reactid="395"]',
+                click: '.btn-primary',
+                odoMeterClick: '[data-reactid="309"]',
+                table: '.mui-table > tbody >tr'
+            }
 
-        console.log('scraping for-', auctionDetails)
-        if(auctionDetails){
+            console.log('scraping for-', auctionDetails)
+            await this.page.click(mmrSelector.vinNumber,{clickCount: 3})
+            await this.page.type(mmrSelector.vinNumber, auctionDetails.vinNumber)
+            await this.page.click(mmrSelector.click)
 
+            await this.page.waitForTimeout(6000)
+
+            let productType = await this.page.evaluate((table) => {
+                let element = document.querySelector(table)
+                if (element) {
+                    element.click()
+                } else {
+                    return false
+                }
+            }, mmrSelector.table)
+
+            await this.page.waitForTimeout(4000)
+
+
+            await this.page.type(mmrSelector.odoMeter, auctionDetails.odoMeter)
+            await this.page.click(mmrSelector.odoMeterClick)
+
+            await this.page.waitForTimeout(4000)
+
+            let adjustedMmrPrice = await this.page.evaluate((adjustedMmr) => {
+                let adjustedPrice = document.querySelector(adjustedMmr).innerText
+                return adjustedPrice
+            }, mmrSelector.adjustedMmr)
+
+            adjustedMmrPrice = adjustedMmrPrice.replace(/\D/g, '')
+            let updateData = {
+                status: 4,
+                adjustedMmrPrice: adjustedMmrPrice
+            }
+
+            console.log("updated data", updateData)
+            await mongo.usaacv.collection('acvLinks').updateOne({ vin: auctionDetails.vinNumber }, { $set: updateData })
+            await this.page.waitForTimeout(4000)
+            await this.page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });
+
+        } catch (err) {
+            console.log(err.toString())
         }
-        await this.page.type(mmrSelector.vinNumber, auctionDetails.vinNumber)
-        await this.page.click(mmrSelector.click)
-        await this.page.waitForTimeout(4000)
-        await this.page.type(mmrSelector.odoMeter, auctionDetails.odoMeter)
-        await this.page.click(mmrSelector.odoMeterClick)
-        await this.page.waitForTimeout(4000)
-        let adjustedMmrPrice = await this.page.evaluate((adjustedMmr) => {
-            let adjustedPrice = document.querySelector(adjustedMmr).innerText
-            return adjustedPrice
-        }, mmrSelector.adjustedMmr)
-        adjustedMmrPrice = adjustedMmrPrice.replace('$','')
-        let updateData =
-        {
-            status: 4,
-            adjustedMmrPrice: adjustedMmrPrice
-        }
-        console.log("updated data",updateData)
-        await mongo.usaacv.collection('acvLinks').updateOne({ VIN: auctionDetails.vinNumber }, { $set: updateData })
     }
 
     async getRandomVin() {
         try {
-            let vin = await mongo.usaacv.collection('acvLinks').aggregate([{ $match: { status: 2 } }, { $sample: { size: 1 } }]).toArray()
+            let vin = await mongo.usaacv.collection('acvLinks').aggregate([{ $match: { status: { $in: [2, 3] } } }, { $sample: { size: 1 } }]).toArray()
             let auctionDetails = {
-                vinNumber: vin[0].VIN,
-                odoMeter: vin[0].Odometer
+                vinNumber: vin[0].vin,
+                odoMeter: vin[0].odometer
             }
-            await mongo.usaacv.collection('acvLinks').updateOne({ VIN: auctionDetails.vinNumber }, { $set: { status: 3 } })
+            await mongo.usaacv.collection('acvLinks').updateOne({ vin: auctionDetails.vinNumber }, { $set: { status: 3 } })
             return auctionDetails
         } catch (err) {
             console.log(err.toString())

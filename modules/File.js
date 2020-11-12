@@ -9,12 +9,14 @@ class File {
     }
     async generateFile() {
         try {
-            let data = await mongo.usaacv.collection('acvLinks').find({ status: 2 }).toArray()
+            console.log('asd')
+            let data = await mongo.usaacv.collection('acvLinks').find({ status: 4 }).toArray()
             console.log(data)
             let xls = json2xls(data);
             fs.writeFileSync('data.xlsx', xls, 'binary');
             return true
         } catch (err) {
+            console.log(err.toString())
             return false
         }
 

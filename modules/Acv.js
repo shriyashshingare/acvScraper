@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer')
 const PUPPETEER_UI_FLAG = false
 const mongo = require('../modules/DB')
+const camelCase = require('camelcase');
 class Acv {
     constructor() {
         this.page;
@@ -149,6 +150,8 @@ class Acv {
             carName: 'h1.vehicle-name.shimmer',
             tableKeys: '.table-striped .left',
             tableValues: '.table-striped .right',
+            price : '.price.animated',
+            auctionType : '.light.active'
         }
         //let sourceUrls = await this.getLinks()
 
@@ -169,6 +172,15 @@ class Acv {
             return keys
         }, auctionSelector.tableKeys)
 
+        let auctionTypes = await this.page.evaluate((auctionType) => {
+            let keys = ''
+            let keysData = document.querySelectorAll(auctionType)
+            for (let i = 0; i < keysData.length; i++) {
+                keys += ' '+keysData[i].innerText
+            }
+            return keys
+        }, auctionSelector.auctionType)
+
         console.log('i am here 5')
         let tableValues = await this.page.evaluate((tableValuesInside) => {
             let values = []
@@ -179,21 +191,30 @@ class Acv {
             return values
         }, auctionSelector.tableValues)
 
-        console.log(tableValues, 'right side values')
-
         console.log('i am here 6')
         let carName = await this.page.evaluate((carNameInside) => {
             let name = document.querySelector(carNameInside).innerText
             return name
         }, auctionSelector.carName)
+
+        let auctionPrice = await this.page.evaluate((price) => {
+            let data = document.querySelector(price).innerText
+            return data
+        }, auctionSelector.price)
+
         console.log('i am here 7')
         let auctionDetails = {}
         auctionDetails["carName"] = carName
+        auctionDetails['auctionTypes'] = auctionTypes
+        auctionPrice = auctionPrice.replace(/\D/g,'')
+        auctionDetails["auctionPrice"] = auctionPrice
         for (let i = 0; i < tableKeys.length && i < tableValues.length; i++) {
             let key = tableKeys[i]
             key =  key.slice(0, -1);
+            key = camelCase(key);
             auctionDetails[key] = tableValues[i]
         }
+        auctionDetails['odometer'] = auctionDetails['odometer'].replace(/\D/g,'')
         console.log(auctionDetails)
         auctionDetails.status = 2;
         this.insertPropertyDetails(sourceUrl, auctionDetails)
