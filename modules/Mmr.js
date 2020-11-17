@@ -1,6 +1,6 @@
 const { timingSafeEqual } = require('crypto');
 const puppeteer = require('puppeteer')
-const PUPPETEER_UI_FLAG = false
+const PUPPETEER_UI_FLAG = true
 const mongo = require('../modules/DB')
 class Mmr {
     constructor() {

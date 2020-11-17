@@ -1,5 +1,5 @@
 const puppeteer = require('puppeteer')
-const PUPPETEER_UI_FLAG = false
+const PUPPETEER_UI_FLAG = true
 const mongo = require('../modules/DB')
 const camelCase = require('camelcase');
 class Acv {
