@@ -84,7 +84,8 @@ class Mmr {
                 adjustedMmr: '.styles__currency__1TJ6H.show--inline-block',
                 click: '.btn-primary',
                 odoMeterClick: '.styles__button__rqYJE',
-                table: '.mui-table > tbody >tr'
+                table: '.mui-table > tbody >tr',
+                spanData:'styles__subHeader__ZFtDL'
             }
 
             console.log('scraping for-', auctionDetails)
@@ -93,6 +94,15 @@ class Mmr {
             await this.page.click(mmrSelector.click)
 
             await this.page.waitForTimeout(2000)
+
+            let spanData = await this.page.evaluate((spanS) => {
+                let element = document.querySelector(spanS)
+                if (element != null) {
+                    return true
+                } else {
+                    return false
+                }
+            }, mmrSelector.spanData)
 
             let productType = await this.page.evaluate((table) => {
                 let element = document.querySelector(table)
@@ -104,7 +114,8 @@ class Mmr {
                     return false
                 }
             }, mmrSelector.table)
-            if(productType == true){
+
+            if(spanData == true){
                 console.log('in type')
                 await this.page.waitForTimeout(2000)
             }
