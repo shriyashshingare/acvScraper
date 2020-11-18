@@ -96,6 +96,7 @@ class Mmr {
 
             let productType = await this.page.evaluate((table) => {
                 let element = document.querySelector(table)
+                console.log(element)
                 if (element) {
                     element.click()
                     return true
