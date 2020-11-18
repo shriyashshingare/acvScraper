@@ -98,6 +98,7 @@ class Mmr {
                 let element = document.querySelector(table)
                 if (element) {
                     element.click()
+                    return true
                 } else {
                     return false
                 }
