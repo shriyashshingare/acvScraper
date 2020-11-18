@@ -92,7 +92,7 @@ class Mmr {
             await this.page.type(mmrSelector.vinNumber, auctionDetails.vinNumber)
             await this.page.click(mmrSelector.click)
 
-            await this.page.waitForTimeout(4000)
+            await this.page.waitForTimeout(2000)
 
             let productType = await this.page.evaluate((table) => {
                 let element = document.querySelector(table)
@@ -103,13 +103,13 @@ class Mmr {
                 }
             }, mmrSelector.table)
 
-            await this.page.waitForTimeout(3000)
+            await this.page.waitForTimeout(2000)
 
 
             await this.page.type(mmrSelector.odoMeter, auctionDetails.odoMeter)
             await this.page.click(mmrSelector.odoMeterClick)
 
-            await this.page.waitForTimeout(3000)
+            await this.page.waitForTimeout(1000)
 
             let adjustedMmrPrice = await this.page.evaluate((adjustedMmr) => {
                 let adjustedPrice = document.querySelectorAll(adjustedMmr)[1].innerText
@@ -130,7 +130,6 @@ class Mmr {
 
             console.log("updated data", updateData)
             await mongo.usaacv.collection('acvLinks').updateOne({ vin: auctionDetails.vinNumber }, { $set: updateData })
-            await this.page.waitForTimeout(4000)
             await this.page.reload({ waitUntil: ["networkidle0", "domcontentloaded"] });
 
         } catch (err) {
