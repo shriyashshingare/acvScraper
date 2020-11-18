@@ -102,8 +102,9 @@ class Mmr {
                     return false
                 }
             }, mmrSelector.table)
-
-            await this.page.waitForTimeout(2000)
+            if(productType){
+                await this.page.waitForTimeout(2000)
+            }
 
 
             await this.page.type(mmrSelector.odoMeter, auctionDetails.odoMeter)
