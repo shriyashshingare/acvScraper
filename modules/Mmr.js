@@ -83,7 +83,7 @@ class Mmr {
                 odoMeter: '#Odometer',
                 adjustedMmr: '.styles__currency__1TJ6H.show--inline-block',
                 click: '.btn-primary',
-                odoMeterClick: '[data-reactid="309"]',
+                odoMeterClick: '.styles__button__rqYJE',
                 table: '.mui-table > tbody >tr'
             }
 
