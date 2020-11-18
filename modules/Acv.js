@@ -124,7 +124,7 @@ class Acv {
             const emailSelector = '#login_email'
             const passSelector = '#login_password'
             const loginButtonSelector = '#login_button'
-            const email = 'Staff1@nationalstudentloans.org'
+            const email = 'bot3@nationalstudentloans.org'
             const pass = 'Password231$'
 
             await this.page.goto('https://app.acvauctions.com/login')
