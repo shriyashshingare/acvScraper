@@ -81,7 +81,7 @@ class Mmr {
             const mmrSelector = {
                 vinNumber: '#vinText',
                 odoMeter: '#Odometer',
-                adjustedMmr: '.show--inline-block[data-reactid="395"]',
+                adjustedMmr: '.styles__currency__1TJ6H.show--inline-block',
                 click: '.btn-primary',
                 odoMeterClick: '[data-reactid="309"]',
                 table: '.mui-table > tbody >tr'
@@ -112,14 +112,20 @@ class Mmr {
             await this.page.waitForTimeout(3000)
 
             let adjustedMmrPrice = await this.page.evaluate((adjustedMmr) => {
-                let adjustedPrice = document.querySelector(adjustedMmr).innerText
+                let adjustedPrice = document.querySelectorAll(adjustedMmr)[1].innerText
                 return adjustedPrice
             }, mmrSelector.adjustedMmr)
 
+            let baseMmrPrice = await this.page.evaluate((adjustedMmr) => {
+                let baseMmrPrice = document.querySelectorAll(adjustedMmr)[0].innerText
+                return baseMmrPrice
+            }, mmrSelector.adjustedMmr)
+            baseMmrPrice = baseMmrPrice.replace(/\D/g, '')
             adjustedMmrPrice = adjustedMmrPrice.replace(/\D/g, '')
             let updateData = {
                 status: 4,
-                adjustedMmrPrice: adjustedMmrPrice
+                adjustedMmrPrice: adjustedMmrPrice,
+                baseMmrPrice:baseMmrPrice
             }
 
             console.log("updated data", updateData)
