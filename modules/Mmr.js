@@ -104,6 +104,7 @@ class Mmr {
                 }
             }, mmrSelector.table)
             if(productType){
+                console.log('in type')
                 await this.page.waitForTimeout(2000)
             }
 
